@@ -1,7 +1,7 @@
 TXS Hub & Head
 ==============
 
-Version: 0.1
+Version: 0.2
 
 The hub is the server with various clients. The aim and current functionality is to display a playlist of the recently played artists and custom messages- you control the hub via a client, the separate head for displaying the playlist and recently integrated functionality to pass the artist name through to my friend's computer, who runs visuals, so the artist name is mixed in with the current set.
 
@@ -12,29 +12,23 @@ Points of Interest
 ------------------
 
 * GTK+ client (crappy looking atm)
-* multiplexing via GIOChannel on cli and head
-* multiplexing via epoll on svr
+* Socket communications
+	* multiplexing via GIOChannel on cli and head
+	* multiplexing via epoll on svr
 * mysql interface
 * Use of GTK+ WebKitWebView on head
 * SQL to XML converter
-* fit for requirements XML parser
+* fit for requirement XML parser. Does what it needs to do, no more.
 
-I put these here in case anyone is after a quick example of working code in these areas.
+I put these POIs here in case anyone is after a quick example of working code in these areas.
 
 
 Notes
 -----
 
-Functioned well at start of night but after first few hours the server started crashing (see bug). Need to take a look before next month's event.
-^ this should be fixed now
+Functioned well at start of night but after first few hours the server started crashing. This should have been fixed.
 
 No reconnection implemented- if a client drops, that's it until the server restarts and all the clients hail again.
-
-
-Bugs
-----
-
-The bug should be fixed now. There were a fair few over looked memory leaks. Need to fire it through valgrind at some point
 
 
 Use
@@ -53,3 +47,11 @@ make all
 
 make [server,head,cli]
 	makes any one of the bins
+
+
+
+
+Changelog
+=========
+* Fixed a lot of memory leaks which has fixed crashing bug (for now). Need to run it through valgrind!
+* Commented source code
