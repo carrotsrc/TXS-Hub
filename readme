@@ -23,6 +23,7 @@ Notes
 -----
 
 Functioned well at start of night but after first few hours the server started crashing (see bug). Need to take a look before next month's event.
+^ this should be fixed now
 
 No reconnection implemented- if a client drops, that's it until the server restarts and all the clients hail again.
 
@@ -30,7 +31,7 @@ No reconnection implemented- if a client drops, that's it until the server resta
 Bugs
 ----
 
-Suffers from dodgy allocation somewhere that traces back to mysql client lib. Not sure why it is occuring yet. The bug is critical and causes the server to crash on second sql request. It probably has something to do with something I am doing.
+The bug should be fixed now. There were a fair few over looked memory leaks. Need to fire it through valgrind at some point
 
 
 Use
