@@ -41,8 +41,8 @@ void process_client(GIOChannel *channel, client_t *cli, hph_t *hdr, int len)
 		if(cli->state == CLI_HAIL) {
 			printf("Hailed successfully\n");
 			cli->state = CLI_READY;
-			r = g_io_channel_write_chars(channel, "db get\n\0",8 , &bwr, &e);
-			g_io_channel_flush(channel, NULL);
+			//r = g_io_channel_write_chars(channel, "db get\n\0",8 , &bwr, &e);
+			//g_io_channel_flush(channel, NULL);
 		}
 	break;
 
@@ -62,6 +62,9 @@ void process_client(GIOChannel *channel, client_t *cli, hph_t *hdr, int len)
 			g_io_channel_flush(channel, NULL);
 
 		}
+	break;
+
+	case HUB_NOT_FOUND:
 	break;
 	}
 }
