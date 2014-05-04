@@ -82,13 +82,13 @@ void db_close(int *dbc)
 	mysql_close((MYSQL*) dbc);
 }
 
-int *db_query(int *dbc, char *q)
+MYSQL_RES *db_query(int *dbc, char *q)
 {
 	if(mysql_real_query((MYSQL*)dbc, q, strlen(q)) != 0)
 		return NULL;
 
 	MYSQL_RES *r = mysql_store_result((MYSQL*)dbc);
-	return (int*)r;
+	return r;
 }
 
 char *db_sqltoxml(MYSQL_RES *res, int *size)
@@ -122,15 +122,16 @@ char *db_sqltoxml(MYSQL_RES *res, int *size)
 
 		for(f = 0; f < nf; f++) {
 			rsize = clen[r*nf+f]+rows[f].len+19;
-			char *tmp = malloc(sizeof(char)*rsize);
+			tmp = malloc(sizeof(char)*rsize+1);
 			sprintf(tmp, "<col name=\"%s\">%s</col>", rows[f].name, row[f]);
 			strcat(xml, tmp);
+			free(tmp);
 		}
 		strcat(xml, "</row>");
 
 		r++;
 	}
-
+	tmp = NULL;
 	strcat(xml,"\n\0");
 	return xml;
 }

@@ -19,6 +19,6 @@
 int *db_connect();
 void db_close(int *dbc);
 int db_testq(int *dbc);
-int *db_query(int *dbc, char *q);
+MYSQL_RES *db_query(int *dbc, char *q);
 char *db_sqltoxml(MYSQL_RES *res, int *size);
 #endif
