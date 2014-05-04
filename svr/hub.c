@@ -197,31 +197,37 @@ void parse_cmdDbArt(hubdesc_t *hub, char *artist)
 	char *sql = malloc(sizeof(char)<<7);
 	
 	sprintf(sql, "INSERT INTO `artist_list` (`name`) VALUE ('%s')", artist);
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 
+	r = NULL;
 	mysql_free_result(r);
 	free_null(sql);
 }
 
 void parse_cmdDbGet(hubdesc_t *hub, char *srch)
 {
-	char *sql = malloc(sizeof(char)<<7);
+	char *sql = malloc(sizeof(char)<<8);
 	unsigned long *len, size;
 	unsigned int nf, i, nr;
-	
 	sprintf(sql, "SELECT DISTINCT `id`, `name` FROM `artist_list` WHERE `name` LIKE '%s%%'", srch);
-	db_query(hub->dbp, sql);
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
+
 	if(r == NULL) {
+		free_null(sql);
 		write(hub->cli, HEADER_ERROR(), HDR_SIZE); 
 		return;
 	}
 
 	nr = mysql_num_rows(r);
+
 	if(nr == 0) {
+		free_null(sql);
+		mysql_free_result(r);
+		r = NULL;
 		write(hub->cli, HEADER_NOTFOUND(), HDR_SIZE); 
 		return;
 	}
+
 	hdispatch_t dispatch;
 
 	char *xml = db_sqltoxml(r, (int*)&size);
@@ -231,7 +237,10 @@ void parse_cmdDbGet(hubdesc_t *hub, char *srch)
 	hub->dispatch = &dispatch;
 	write(hub->cli, HEADER_DISPATCH(size, nr), sizeof(hph_t));
 
-	mysql_free_result(r);
+	if(r != NULL) {
+		mysql_free_result(r);
+		r = NULL;
+	}
 
 	free_null(sql);
 }
@@ -253,6 +262,8 @@ void parse_cmdDbLineup(hubdesc_t *hub, char *var)
 	nr = mysql_num_rows(r);
 	if(nr == 0) {
 		write(hub->cli, HEADER_NOTFOUND(), HDR_SIZE); 
+		mysql_free_result(r);
+		r = NULL;
 		return;
 	}
 	hdispatch_t dispatch;
@@ -266,6 +277,7 @@ void parse_cmdDbLineup(hubdesc_t *hub, char *var)
 
 
 	mysql_free_result(r);
+	r = NULL;
 }
 
 void parse_cmdMessage(hubdesc_t *hub, char *var)
@@ -273,7 +285,7 @@ void parse_cmdMessage(hubdesc_t *hub, char *var)
 	char *sql = malloc(sizeof(char)<<7);
 
 	sprintf(sql, "INSERT INTO `head_msg` (`msg`) VALUE ('%s')", var);
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 
 	mysql_free_result(r);
 
@@ -298,14 +310,15 @@ void parse_cmdPlaylistAdd(hubdesc_t *hub, char *id)
 	char *sql = malloc(sizeof(char)<<7);
 
 	sprintf(sql, "INSERT INTO `playlist` (`artist_id`) VALUE ('%s')", id);
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 
 	mysql_free_result(r);
 
 	sprintf(sql, "UPDATE `artist_list` SET count=count+1 WHERE `id`='%s';", id);
-	r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	r = db_query(hub->dbp, sql);
 
 	mysql_free_result(r);
+	r = NULL;
 	free_null(sql);
 
 	if(hub->head != WIRE_UNDEF)
@@ -331,12 +344,13 @@ void parse_cmdLineupCurrent(hubdesc_t *hub, char *id)
 	char *sql = malloc(sizeof(char)<<7);
 
 	sprintf(sql, "UPDATE `lineup` SET `playing`='0' WHERE `playing`='1';");
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 
 	sprintf(sql, "UPDATE `lineup` SET `playing`='1' WHERE `id`='%s';", id);
-	r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	r = db_query(hub->dbp, sql);
 
 	mysql_free_result(r);
+	r = NULL;
 	free_null(sql);
 
 	if(hub->head != WIRE_UNDEF)
@@ -348,8 +362,9 @@ void parse_cmdLineupNone(hubdesc_t *hub, char *var)
 	char *sql = malloc(sizeof(char)<<7);
 
 	sprintf(sql, "UPDATE `lineup` SET `playing`='0' WHERE `playing`='1';");
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 	mysql_free_result(r);
+	r = NULL;
 	free_null(sql);
 }
 
@@ -371,7 +386,7 @@ void hub_refreshVis(hubdesc_t *hub, char *id)
 	unsigned int nf, i, nr;
 	
 	sprintf(sql, "SELECT `name` FROM `artist_list` WHERE `id`='%s' ORDER BY `id` DESC LIMIT 1;", id);
-	MYSQL_RES *r = (MYSQL_RES*)db_query(hub->dbp, sql);
+	MYSQL_RES *r = db_query(hub->dbp, sql);
 
 	nr = mysql_num_rows(r);
 	if(nr == 0) {
@@ -381,5 +396,7 @@ void hub_refreshVis(hubdesc_t *hub, char *id)
 
 	char *xml = db_sqltoxml(r, (int*)&size);
 	write(hub->vis, xml, size);
+	r = NULL;
 	mysql_free_result(r);
+	free_null(sql);
 }
