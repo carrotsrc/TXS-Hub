@@ -15,6 +15,8 @@
 */
 #include "hubcomm.h"
 
+
+// setup a hub header for sending to the client
 hph_t *hub_header(unsigned short code, unsigned int size, unsigned int nelements)
 {
 	hph_t *h = malloc(sizeof(hph_t));

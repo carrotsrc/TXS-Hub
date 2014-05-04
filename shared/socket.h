@@ -15,6 +15,8 @@
 */
 #ifndef SOCKET_H
 #define SOCKET_H
+// generate purpose functions for setting up network
+// sockets
 int net_create_socket();
 int net_bind(int sock, int port);
 int net_connect(int sock, char *addr, int port);

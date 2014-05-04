@@ -18,18 +18,22 @@
 #include <string.h>
 #include "parser.h"
 
+// current parsing state
 #define STATE_BLOCK 0
 #define STATE_ELEMENT_NAME 1
 #define STATE_ATTRIBUTE 2
 #define STATE_VALUE 3
 #define STATE_STRING 5
 
+// macros for quickly manipulating the parser
 #define end() state[cstate-1]
 #define push_state(s) state[cstate]=s; cstate++;
 #define pop_state() state[cstate-1]=0; cstate--;
 #define append(c) str[cp]=c; cp++; str[cp] = '\0';
 #define reset() cp = 0;
 
+
+// initialise the parser
 parser_t *parser_init(char *xml, int len)
 {
 	parser_t *p = malloc(sizeof(parser_t));
@@ -41,11 +45,13 @@ parser_t *parser_init(char *xml, int len)
 	return p;
 }
 
-
+// allocate the memory for the number of attributes in the element
 int allocateAttributes(parser_t *parser, element_t *element)
 {
 	int opos = parser->loc;
 	int total = 0;
+
+	// count the number of attributes
 	while(parser->loc < parser->len) {
 		if(parser->xml[parser->loc] == '=')
 			total++;
@@ -55,24 +61,34 @@ int allocateAttributes(parser_t *parser, element_t *element)
 		parser->loc++;
 	}
 
+	// set the number in the element structure
 	element->nattr = total;
+
+	// allocate memory
 	if(total > 0)
 		element->attributes = malloc(sizeof(attribute_t)*total);
 	else
 		element->attributes = NULL;
 
-
+	// rewind character position
 	parser->loc = opos;
 	return total;
 }
 
+
+/* get the next element in the xml document
+ *
+ * this function runs through the document until
+ * it has generated the next element
+ */
 element_t *parser_nextElement(parser_t *parser)
 {
-	short state[32];
+	short state[32]; // unlikely to ever need 32 states on the stack
 	short cstate = 0;
 	short estate = 0;
 	short cattr = 0;
 
+	// new element
 	element_t *e = malloc(sizeof(element_t));
 	e->name = NULL;
 	e->nattr = 0;
@@ -84,14 +100,16 @@ element_t *parser_nextElement(parser_t *parser)
 	int bsize = sizeof(char)<<8;
 	char *str = malloc(bsize);
 	short cp = 0;
-	push_state(STATE_BLOCK);
+	push_state(STATE_BLOCK); // block is the base state
 	while(parser->loc < parser->len) {
 		ch = parser->xml[parser->loc];
 		estate = end();
 
 		switch(ch) {
-		case '<':
+		case '<': // opening an element
 			if(cp > 0) {
+				// we have got to the end of a text block
+				// so return a text element
 				e->name = "#text";
 				e->nattr = 1;
 				a->name="#text";
@@ -106,8 +124,9 @@ element_t *parser_nextElement(parser_t *parser)
 			push_state(STATE_ELEMENT_NAME);
 		break;
 
-		case '>':
+		case '>': // closed an element
 			if(estate == STATE_ELEMENT_NAME) {
+				// element only consists of a name
 				if(e->name == NULL ){
 					e->name = malloc(sizeof(char)*cp);
 					strcpy(e->name, str);
@@ -117,6 +136,7 @@ element_t *parser_nextElement(parser_t *parser)
 
 			}
 			if(estate == STATE_VALUE) {
+				// first add the last attribute value
 				a->value = malloc(sizeof(char)*cp);
 				a->vlen = cp;
 				strcpy(a->value, str);
@@ -125,11 +145,16 @@ element_t *parser_nextElement(parser_t *parser)
 				memcpy(&e->attributes[cattr], a, sizeof(attribute_t));
 				cattr++;
 				parser->loc++;
-				return e;
+				return e; // return the element
 			}
 			else
 			if(estate == STATE_BLOCK) {
+				// we are in text
+
+				// have we reached the size of the buffer?
 				if(cp == bsize-1) {
+					// reallocate the buffer with another
+					// 128 bytes
 					bsize = ((bsize>>8)+1)<<8;
 					str = realloc(str, bsize);
 				}
@@ -139,10 +164,12 @@ element_t *parser_nextElement(parser_t *parser)
 
 		case '/':
 			if(estate == STATE_ELEMENT_NAME) {
+				// this is a closing element
 				append(ch);
 			}
 			else
 			if(estate == STATE_VALUE) {
+				// this is a short element
 				a->value = malloc(sizeof(char)*cp);
 				a->vlen = cp;
 				strcpy(a->value, str);
@@ -153,7 +180,11 @@ element_t *parser_nextElement(parser_t *parser)
 			}
 			else
 			if(estate == STATE_BLOCK) {
-				if(cp == bsize-1) {
+				// we are in a text block
+				
+
+				if(cp == bsize-1) { // buffer large enough?
+					// reallocate
 					bsize = ((bsize>>8)+1)<<8;
 					str = realloc(str, bsize);
 				}
@@ -163,6 +194,9 @@ element_t *parser_nextElement(parser_t *parser)
 
 		case '=':
 			if(estate == STATE_ATTRIBUTE) {
+				// we are about to specify an attribute
+				// value
+
 				a->name = malloc(sizeof(char)*cp);
 				strcpy(a->name, str);
 				reset();
@@ -170,6 +204,7 @@ element_t *parser_nextElement(parser_t *parser)
 			}
 			else
 			if(estate == STATE_BLOCK) {
+				// we're in a text block
 				if(cp == bsize-1) {
 					bsize = ((bsize>>8)+1)<<8;
 					str = realloc(str, bsize);
@@ -191,6 +226,7 @@ element_t *parser_nextElement(parser_t *parser)
 			}
 			else
 			if(estate == STATE_STRING || estate == STATE_BLOCK) {
+				// we're in a string or text block
 				if(cp == bsize-1) {
 					bsize = ((bsize>>8)+1)<<8;
 					str = realloc(str, bsize);
@@ -199,6 +235,8 @@ element_t *parser_nextElement(parser_t *parser)
 			}
 			else
 			if(estate == STATE_VALUE) {
+				// we have just finished setting a value
+				// for an attribute
 				a->value = malloc(sizeof(char)*cp);
 				a->vlen = cp;
 				strcpy(a->value, str);
@@ -216,14 +254,17 @@ element_t *parser_nextElement(parser_t *parser)
 			}
 			else
 			if(estate == STATE_STRING) {
+				// end of string
 				pop_state();
 			}
 			else {
+				// beginning of string
 				push_state(STATE_STRING);
 			}
 		break;
 
 		default:
+			// append the character to the current buffer
 			if(cp == bsize-1) {
 				bsize = ((bsize>>8)+1)<<8;
 				str = realloc(str, bsize);
@@ -235,6 +276,8 @@ element_t *parser_nextElement(parser_t *parser)
 		parser->loc++;
 	}
 
+	// here we have reached the end of the document while
+	// in a text block. 
 	if(cp > 0) {
 		e->name = "#text";
 		e->nattr = 1;
@@ -244,10 +287,11 @@ element_t *parser_nextElement(parser_t *parser)
 		strcpy(a->value, str);
 		e->attributes = malloc(sizeof(attribute_t));
 		memcpy(e->attributes, a, sizeof(attribute_t));
-		parser->pstate = PARSER_EOF;
-		return e;
+		parser->pstate = PARSER_EOF; // we are at the end
+		return e; // return the text block
 	}
 
+	// here we have cleanly reached the end of the xml
 	parser->pstate = PARSER_EOF;
 	return NULL;
 }

@@ -26,25 +26,38 @@ gboolean perform_lookup(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 
 int main(int argc, char *argv[])
 {
+
+	// setup the client descriptor
 	client_t cli;
 	cli.state = CLI_UNDEF;
 	cli.pl_size = 0;
 	cli.pl_type = 0;
-	
 
+	// setup the socket for connection to the server
 	int sock = net_create_socket();
 	if(net_connect(sock, "127.0.0.1", 9904)<0) {
 		printf("Problem connecting");
 		close(sock);
 		return 1;
 	}
+
+	// set it to nonblocking since it is being used
+	// in multiplexing
 	net_sock_nonblocking(sock);
+
+	/* set the socket to a GTK+ channel.
+	 * we are not going to handle the socket file descriptor directly, but deal with
+	 * the GTK+ channel. This means we can watch for socket events through GTK+'s 
+	 * multiplex loop. No need for multiple poll loops to confuse the situation.
+	 */
 	GIOChannel *gsock = g_io_channel_unix_new(sock);
-	cli.sock = gsock;
+	cli.sock = gsock; // the client will deal with the channel, not the fd
 
 	g_io_channel_set_encoding(gsock, NULL, NULL);
-	g_io_add_watch(gsock, G_IO_IN, read_chan, (gpointer)&cli);
+	g_io_add_watch(gsock, G_IO_IN, read_chan, (gpointer)&cli); // watch out for input on the socket channel
 
+
+	// a bunch of widgets
 	GtkWidget *window;
 	GtkWidget *bt;
 	GtkWidget *lb;
@@ -60,6 +73,13 @@ int main(int argc, char *argv[])
 
 	window = txs_create_window();
 
+	/*
+	 * The following init code is setting up the layout
+	 * of the client window. This is not very elegent code
+	 * since in the process of learning GTK.
+	 *
+	 * the client window is fugly.
+	 */
 	frame = gtk_grid_new ();
 	gtk_grid_set_column_spacing(GTK_GRID(frame), 7);
 	g_object_set (frame, "expand", TRUE, NULL);
@@ -100,9 +120,10 @@ int main(int argc, char *argv[])
 	col = gtk_tree_view_column_new_with_attributes("Artist", rnd, "text", 1, NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(tree), col);
 
+	// here we are setting the artist list to be scrollable
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 300);
+	gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 300); // make the list scrollable
 	gtk_container_add(GTK_CONTAINER(scroll), tree);
 	
 	//gtk_grid_attach(GTK_GRID(frame),
@@ -114,8 +135,10 @@ int main(int argc, char *argv[])
 /*
  * Artist search/add
  */
-
 	tx = gtk_entry_new();
+
+	// set a callback on the text input box so when a key is released it will perform
+	// a query with the server
 	g_signal_connect(tx, "key-release-event", G_CALLBACK(ui_perform_lookup), (gpointer)&cli);
 	gtk_box_pack_end(GTK_BOX(box), tx, TRUE, TRUE, 0);
 	cli.dbsearch = (void*)tx;
@@ -125,6 +148,8 @@ int main(int argc, char *argv[])
  * Add to database
  */
 	bt = gtk_button_new_with_label("Add to Database");
+
+	// callback for button when clicked will add an artist to the database
 	g_signal_connect(bt, "clicked", G_CALLBACK(ui_perform_add), (gpointer)&cli);
 	gtk_box_pack_end(GTK_BOX(box), bt, FALSE, FALSE, 0);
 
@@ -210,6 +235,7 @@ int main(int argc, char *argv[])
 	gtk_main();
 }
 
+// debug function to add artists to the list
 void populate_tree_model(GtkListStore *store)
 {
 	GtkTreeIter i;
@@ -228,42 +254,48 @@ void populate_tree_model(GtkListStore *store)
 
 	gtk_list_store_append(store, &i);
 	gtk_list_store_set(store, &i, 0, "4", -1);
-	gtk_list_store_set(store, &i, 1, "Eclise", -1);
+	gtk_list_store_set(store, &i, 1, "Kaya project", -1);
 
 	gtk_list_store_append(store, &i);
 	gtk_list_store_set(store, &i, 0, "5", -1);
 	gtk_list_store_set(store, &i, 1, "Zen Baboon", -1);
 }
 
+// clear the provided list
 void clear_tree_model(GtkWidget *widget, gpointer data)
 {
 	gtk_list_store_clear(GTK_LIST_STORE(data));
 }
 
+/* read data from the channel
+ * so here an event has triggered on the socket. Time to do sum'int.
+ */
 gboolean read_chan (GIOChannel *gio, GIOCondition condition, gpointer data)
 {
-	hph_t *hdr = malloc(sizeof(hph_t));
+	hph_t *hdr = malloc(sizeof(hph_t)); // allocate a header
 	gchar *buf;
 	gsize l;
 	client_t *cli = (client_t*)data;
 
+	// set the size of the data
 	if(cli->state == CLI_WAITING_DISPATCH) {
+		// the client is waiting for a payload
 		l = cli->pl_size;
-		buf = malloc(sizeof(char)*l);
+		buf = malloc(sizeof(char)*l); // allocate the buffer
 	}
 	else
-		l = sizeof(hph_t);
+		l = sizeof(hph_t); // client is only reading a standard hub header
 
 	gsize br = 0;
 	GIOStatus r;
 	GError *e = NULL;
 	if(cli->state == CLI_WAITING_DISPATCH)
-		r = g_io_channel_read_chars(gio, buf, l, &br, &e);
+		r = g_io_channel_read_chars(gio, buf, l, &br, &e); // read the payload off the channel
 	else
-		r = g_io_channel_read_chars(gio, (gchar*)hdr, l, &br, &e);
+		r = g_io_channel_read_chars(gio, (gchar*)hdr, l, &br, &e); // read the header off the channel
 
 	switch(r) {
-	case G_IO_STATUS_ERROR:
+	case G_IO_STATUS_ERROR: // something borked
 		g_error("Error reading %s\n", e->message);
 	break;
 
@@ -273,9 +305,9 @@ gboolean read_chan (GIOChannel *gio, GIOCondition condition, gpointer data)
 
 	case G_IO_STATUS_NORMAL:
 		if(cli->state == CLI_WAITING_DISPATCH)
-			process_dispatch(gio, cli, buf, br);
+			process_dispatch(gio, cli, buf, br); // process the payload
 		else
-			process_client(gio, cli, hdr, br);
+			process_client(gio, cli, hdr, br); // go to client command branching
 
 	break;
 	}

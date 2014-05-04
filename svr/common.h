@@ -16,13 +16,14 @@
 #ifndef SYS_H
 #define SYS_H
 
+
+// headers for the whole program
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <sys/epoll.h>
+#include <sys/epoll.h> // multiplexing
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <sys/socket.h> // sockets
 #include <fcntl.h>
 #include <unistd.h>
 

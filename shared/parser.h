@@ -17,6 +17,8 @@
 #define PARSER_H
 #define PARSER_RUNNING 1
 #define PARSER_EOF 2
+
+// an XML element's attribute structure
 struct element_attribute_struct {
 	char *name;
 	char *value;
@@ -24,6 +26,7 @@ struct element_attribute_struct {
 };
 typedef struct element_attribute_struct attribute_t;
 
+// an XML element
 struct element_struct {
 	char *name;
 	attribute_t *attributes;
@@ -31,6 +34,7 @@ struct element_struct {
 };
 typedef struct element_struct element_t;
 
+// parser state
 struct xml_parser_struct {
 	int loc;
 	int len;

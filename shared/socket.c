@@ -19,6 +19,13 @@
 #include <netdb.h>
 #include <fcntl.h>
 #define SOCK_ADDR(c) ( (struct sockaddr*) c)
+
+/* it's critical to remember that unix/linux handles
+ * sockets as file descriptors. So when we deal with
+ * the socket, we're dealing with it's fd.
+ */
+
+// create a network socket file descriptor
 int net_create_socket()
 {
 	int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -28,6 +35,7 @@ int net_create_socket()
 	return fd;
 }
 
+// bind the file descriptor to a port
 int net_bind(int sock, int port)
 {
 	struct sockaddr_in saddr;
@@ -40,6 +48,7 @@ int net_bind(int sock, int port)
 	return 0;
 }
 
+// connect the socket to address:port
 int net_connect(int sock, char *addr, int port)
 {
 	struct sockaddr_in saddr;
@@ -55,6 +64,7 @@ int net_connect(int sock, char *addr, int port)
 
 }
 
+// set the socket to listen for incoming connections
 int net_listen(int sock)
 {
 	if(listen(sock, 5) < 0)
@@ -62,6 +72,9 @@ int net_listen(int sock)
 	return 0;
 }
 
+/* set file desciptor flag to nonblock
+*  so the socket can be used with multiplexing
+*/
 int net_sock_nonblocking(int sock)
 {
 	int flags = fcntl(sock, F_GETFL, 0);
@@ -75,6 +88,7 @@ int net_sock_nonblocking(int sock)
 	return 0;
 }
 
+// accept a connection on the socket
 int net_accept(int sock)
 {
 	struct sockaddr_in caddr;

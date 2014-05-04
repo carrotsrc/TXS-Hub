@@ -15,35 +15,47 @@
 */
 #ifndef HUB_H
 #define HUB_H
-#include "hubcomm.h"
+#include "hubcomm.h" // a bunch of shared hub commmunications
 
+
+// wire types
 #define WIRE_HEAD 1
 #define WIRE_CLI 2
 #define WIRE_VIS 3
 #define WIRE_UNDEF 0
 
+// hub states
 #define STATE_RUN 0
 #define STATE_READY 1
 #define STATE_WAITING_DISPATCH 40
 #define STATE_KILL 90
 
+// CLI params
+
+// -v for verbose
 #define HFLAG_VERBOSE 1
 
 
+// structure data waiting dispatch
 typedef struct hub_dispatch_struct {
 	int fd;
 	void *payload;
 	int size;
 }__attribute__((packed)) hdispatch_t;
 
+/* the hub descriptor
+ * defines wire descriptors for the 
+ * different client descriptors
+ */
 typedef struct hubdesc_struct {
-	int head;
-	int cli;
-	int vis;
-	int state;
-	int flags;
-	int *dbp;
+	int head; // the head wire
+	int cli; // the client wire
+	int vis; // the visuals rig wire
+	int state; // current state of hub
+	int flags; // CLI params
+	int *dbp; // the database connection
 
+	// payload waiting dispatch
 	hdispatch_t *dispatch;
 } hubdesc_t;
 

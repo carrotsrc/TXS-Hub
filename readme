@@ -5,7 +5,7 @@ Version: 0.1
 
 The hub is the server with various clients. The aim and current functionality is to display a playlist of the recently played artists and custom messages- you control the hub via a client, the separate head for displaying the playlist and recently integrated functionality to pass the artist name through to my friend's computer, who runs visuals, so the artist name is mixed in with the current set.
 
-It is not very well commented yet (/at all)
+There is clear commenting on most of the code.
 
 
 Points of Interest
@@ -17,6 +17,9 @@ Points of Interest
 * mysql interface
 * Use of GTK+ WebKitWebView on head
 * SQL to XML converter
+* fit for requirements XML parser
+
+I put these here in case anyone is after a quick example of working code in these areas.
 
 
 Notes

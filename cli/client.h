@@ -17,15 +17,18 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+// current client states
 #define CLI_UNDEF 0
 #define CLI_HAIL 1
 #define CLI_READY 10
 #define CLI_WAITING_DBADD 20
 #define CLI_WAITING_DISPATCH 40
 
+// type of payload to wait for
 #define PL_ARTISTS 1
 #define PL_LINEUP 2
 
+// the client descriptor
 typedef struct client_struct {
 	short state;
 	short pl_type;
@@ -45,11 +48,13 @@ typedef struct client_struct {
 
 } client_t;
 
+// an artist record
 typedef struct artist_row {
 	int id;
 	char *name;
 } arow_t;
 
+// the list of artists from search
 typedef struct artist_list {
 	int nelements;
 	arow_t *artists;

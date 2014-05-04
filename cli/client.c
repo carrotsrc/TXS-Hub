@@ -39,6 +39,7 @@ void process_client(GIOChannel *channel, client_t *cli, hph_t *hdr, int len)
 
 	case HUB_OK:
 		if(cli->state == CLI_HAIL) {
+			// we have hailed successfully
 			printf("Hailed successfully\n");
 			cli->state = CLI_READY;
 			//r = g_io_channel_write_chars(channel, "db get\n\0",8 , &bwr, &e);
@@ -52,12 +53,13 @@ void process_client(GIOChannel *channel, client_t *cli, hph_t *hdr, int len)
 		}
 	break;
 
-	case HUB_DISPATCH:
+	case HUB_DISPATCH: // hub has payload waiting for dispatch
 		if(cli->state == CLI_READY) {
 			cli->state = CLI_WAITING_DISPATCH;
 			cli->pl_size = hdr->pl_size;
 			cli->pl_nelements = hdr->nelements;
 
+			// tell hub we are ready for dispatch
 			r = g_io_channel_write_chars(channel, "ok\n\0",4 , &bwr, &e);
 			g_io_channel_flush(channel, NULL);
 
@@ -69,6 +71,7 @@ void process_client(GIOChannel *channel, client_t *cli, hph_t *hdr, int len)
 	}
 }
 
+// process the dispatch
 void process_dispatch(GIOChannel *channel, client_t *cli, gchar *buf, int len)
 {
 	if(cli->pl_type == PL_ARTISTS)
