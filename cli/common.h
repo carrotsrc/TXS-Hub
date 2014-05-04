@@ -15,6 +15,8 @@
 */
 #ifndef COMMON_H
 #define COMMON_H
+
+// general includes to make everything function
 #include <gtk/gtk.h>
 #include <string.h>
 #include <stdlib.h>
