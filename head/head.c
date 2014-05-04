@@ -17,6 +17,7 @@
 #include "head.h"
 #include "hubcomm.h"
 
+// this function is for processing the header sent from the hub
 void process_head(GIOChannel *channel, head_t *head, hph_t *hdr, int len)
 {
 	GError *e = NULL;
@@ -33,17 +34,21 @@ void process_head(GIOChannel *channel, head_t *head, hph_t *hdr, int len)
 	case HUB_OK:
 		if(head->state == HEAD_HAIL) {
 			printf("Hailed successfully\n");
-			head->state = HEAD_READY;
+			head->state = HEAD_READY; // head has hailed and is ready
 		}
 	break;
 
 	case HUB_ERROR:
+		// this is pretty unlikely
 		if(head->state == HEAD_HAIL) {
 			printf("Hail unsuccessful\n");
 		}
 	break;
 
 	case HUB_DISPATCH:
+		// this could be needed at some point
+		// but at the moment all the head does
+		// is refresh
 		if(head->state == HEAD_READY) {
 			head->state = HEAD_WAITING_DISPATCH;
 			head->pl_size = hdr->pl_size;
@@ -57,9 +62,9 @@ void process_head(GIOChannel *channel, head_t *head, hph_t *hdr, int len)
 	break;
 
 	case HUB_REFRESH:
-		printf("");
-		WebKitWebView *view = WEBKIT_WEB_VIEW(head->view);
-		webkit_web_view_load_uri(view, "http://localhost/txs");
+		// hub state has changed so has requested head make a 
+		// refresh to display newest information
+		webkit_web_view_load_uri(WEBKIT_WEB_VIEW(head->view), "http://localhost/txs");
 	break;
 	}
 }

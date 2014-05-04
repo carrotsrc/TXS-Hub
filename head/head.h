@@ -22,15 +22,16 @@
 #define HEAD_READY 10
 #define HEAD_WAITING_DISPATCH 40
 
+// the head descriptor
 typedef struct head_struct {
 	short state;
-	short pl_type;
-	int pl_size;
-	int pl_nelements;
+	short pl_type; // the type of payload coming from hub
+	int pl_size; // the size of payload in bytes
+	int pl_nelements; // the number of list elements in payload
 
 	void *view;
 
-	GIOChannel *sock;
+	GIOChannel *sock; // the socket in a GTK+ channel
 } head_t;
 
 void process_head(GIOChannel *channel, head_t *head, hph_t *hdr, int len);
